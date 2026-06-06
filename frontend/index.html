@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIFAR-10 Trainer Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg-shape shape-a" aria-hidden="true"></div>
+  <div class="bg-shape shape-b" aria-hidden="true"></div>
+
+  <main class="container">
+    <header class="hero">
+      <p class="eyebrow">ML Operations</p>
+      <h1>CIFAR-10 Training Control Room</h1>
+      <p class="subtitle">Run backend training jobs and inspect live metrics in one place.</p>
+    </header>
+
+    <section class="panel controls">
+      <div class="field-grid">
+        <div class="field-row">
+          <label for="optimizer">Optimizer</label>
+          <select id="optimizer"></select>
+        </div>
+        <div class="field-row">
+          <label for="epochs">Epochs</label>
+          <input id="epochs" type="number" min="1" max="50" value="5" />
+        </div>
+        <div class="field-row">
+          <label for="subsetSize">Train Subset Size</label>
+          <input id="subsetSize" type="number" min="128" value="10000" />
+        </div>
+        <div class="field-row">
+          <label for="testSubsetSize">Val Subset Size</label>
+          <input id="testSubsetSize" type="number" min="128" value="2000" />
+        </div>
+        <div class="field-row">
+          <label for="batchSize">Batch Size</label>
+          <input id="batchSize" type="number" min="1" value="128" />
+        </div>
+        <div class="field-row">
+          <label for="trials">Trials</label>
+          <input id="trials" type="number" min="1" max="20" value="1" />
+        </div>
+        <div class="field-row">
+          <label for="seed">Seed</label>
+          <input id="seed" type="number" min="0" value="42" />
+        </div>
+      </div>
+      <div class="toggle-grid">
+        <label class="toggle-item" for="deterministic">
+          <input id="deterministic" type="checkbox" checked />
+          <span>Deterministic</span>
+        </label>
+        <label class="toggle-item" for="fullDataset">
+          <input id="fullDataset" type="checkbox" />
+          <span>Full Dataset</span>
+        </label>
+        <label class="toggle-item" for="useAugmentation">
+          <input id="useAugmentation" type="checkbox" checked />
+          <span>Use Augmentation</span>
+        </label>
+        <label class="toggle-item" for="paperProtocol">
+          <input id="paperProtocol" type="checkbox" />
+          <span>Paper Protocol</span>
+        </label>
+      </div>
+      <div class="button-row">
+        <button id="trainBtn" type="button">Start Training</button>
+        <button id="compareBtn" type="button">Compare All Optimizers</button>
+        <button id="healthBtn" type="button" class="secondary">Check API Health</button>
+      </div>
+      <p id="status" class="status">Waiting for action.</p>
+    </section>
+
+    <section class="panel metrics" id="metricsPanel" hidden>
+      <h2>Final Metrics</h2>
+      <div class="metric-grid">
+        <article><h3>Train Loss</h3><p id="mTrainLoss">-</p></article>
+        <article><h3>Train Accuracy</h3><p id="mTrainAcc">-</p></article>
+        <article><h3>Val Loss</h3><p id="mValLoss">-</p></article>
+        <article><h3>Val Accuracy</h3><p id="mValAcc">-</p></article>
+      </div>
+      <div class="summary-grid" id="summaryPanel">
+        <article><h3>Trials</h3><p id="sTrials">-</p></article>
+        <article><h3>Train Acc (mean ± std)</h3><p id="sTrainAcc">-</p></article>
+        <article><h3>Val Acc (mean ± std)</h3><p id="sValAcc">-</p></article>
+        <article><h3>Val Loss (mean ± std)</h3><p id="sValLoss">-</p></article>
+      </div>
+      <div class="artifact-box">
+        <h3>Artifacts</h3>
+        <ul id="artifactList"></ul>
+      </div>
+    </section>
+
+    <section class="panel history" id="historyPanel" hidden>
+      <h2>Epoch History</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Epoch</th>
+              <th>Train Loss</th>
+              <th>Train Acc (%)</th>
+              <th>Val Loss</th>
+              <th>Val Acc (%)</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel compare" id="comparePanel" hidden>
+      <h2>Optimizer Comparison</h2>
+      <p id="bestOptimizer">Best optimizer: -</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Optimizer</th>
+              <th>Trials</th>
+              <th>Train Acc (mean ± std)</th>
+              <th>Val Acc (mean ± std)</th>
+              <th>Train Loss (mean ± std)</th>
+              <th>Val Loss (mean ± std)</th>
+            </tr>
+          </thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

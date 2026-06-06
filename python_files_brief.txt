@@ -1,0 +1,110 @@
+Python Files Brief Overview
+===========================
+
+1) main.py
+Purpose:
+- Defines the FastAPI backend API for training and comparing CIFAR-10 optimizers.
+- Validates request inputs and forwards work to trainer.run_training.
+
+Main data models:
+- TrainRequest: Input schema for /train.
+- TrainResponse: Output schema for /train.
+- CompareRequest: Input schema for /compare.
+- CompareResponse: Output schema for /compare.
+- EpochResult, SummaryResult, TrialResult: Structured result components.
+
+Main functions/endpoints:
+- health(): Returns {"status": "ok"} for service health.
+- optimizers(): Returns supported optimizer names.
+- train(req):
+  - Normalizes optimizer aliases (e.g., adabound -> adabs).
+  - Validates epochs, batch size, trials, and subset sizes.
+  - Calls run_training(...) for one optimizer and returns the result.
+- compare(req):
+  - Validates the same core settings.
+  - Runs run_training(...) for each optimizer.
+  - Picks the optimizer with best final validation accuracy.
+- index(): Serves frontend/index.html when frontend exists.
+
+
+2) trainer.py
+Purpose:
+- Contains the complete training/evaluation pipeline for CIFAR-10.
+- Handles reproducibility, dataset loading, training loops, checkpointing, and artifacts.
+
+Main constants/config:
+- DEVICE: CUDA if available, else CPU.
+- DEFAULT_*: Default epochs, batch size, subset sizes, trials, seed.
+- PAPER_PROTOCOL: Preset for larger reproduction-style runs.
+- PAPER_OPTIMIZER_DEFAULTS: Baseline hyperparameters per optimizer.
+
+Main functions:
+- seed_everything(seed, deterministic=True):
+  - Seeds Python/NumPy/PyTorch for reproducible runs.
+  - Configures deterministic behavior for cuDNN.
+- _seed_worker(worker_id):
+  - Seeds DataLoader worker processes.
+- _get_transforms(use_augmentation):
+  - Returns train/test image transforms and normalization.
+- get_dataloaders(subset_size, test_subset_size, batch_size, seed, use_augmentation, full_dataset):
+  - Downloads/loads CIFAR-10.
+  - Builds either full datasets or subset views.
+  - Returns train/test DataLoaders.
+- train_one_epoch(model, loader, criterion, optimizer):
+  - Runs one training epoch and returns average loss + accuracy.
+- evaluate(model, loader, criterion):
+  - Runs validation without gradients and returns loss + accuracy.
+- save_checkpoint(...):
+  - Saves model state/history to checkpoints.
+  - Also updates latest optimizer/global checkpoints.
+- _default_optimizer_params(optimizer_name):
+  - Returns optimizer defaults and maps adabound alias to adabs.
+- _mean_std(values):
+  - Utility to compute mean and population std safely.
+- _write_json_artifact(optimizer_name, run_id, payload, trial_index=None):
+  - Writes per-trial or aggregate JSON artifacts.
+- run_training(...):
+  - Core orchestrator.
+  - Applies protocol settings and optimizer defaults.
+  - Runs trials -> epochs -> train/evaluate.
+  - Saves checkpoints/artifacts and returns aggregated metrics + histories.
+
+
+3) model.py
+Purpose:
+- Defines the CNN architecture used for CIFAR-10 classification.
+
+Main class/function:
+- CIFAR10CNN(nn.Module):
+  - __init__(): Builds feature extractor and classifier layers.
+    - Two conv blocks (Conv + BatchNorm + ReLU + Pool + Dropout).
+    - Fully connected classifier ending in 10 output logits.
+  - forward(x):
+    - Passes input through features then classifier.
+    - Returns class logits for CrossEntropyLoss.
+
+
+4) optimizers.py
+Purpose:
+- Provides optimizer factory and custom AdaBound implementation.
+
+Main class/function:
+- AdaBound(Optimizer):
+  - __init__(...): Validates hyperparameters and sets defaults/state.
+  - step(closure=None):
+    - Performs one optimization step.
+    - Tracks Adam-style moments (exp_avg, exp_avg_sq).
+    - Applies bias correction.
+    - Computes dynamic lower/upper learning-rate bounds.
+    - Applies bounded adaptive update to parameters.
+- get_optimizer(name, params, **kwargs):
+  - Factory that returns Adam, SGD, or AdaBound based on name.
+  - Accepts both adabs and adabound names for compatibility.
+
+
+High-level flow
+---------------
+- main.py receives API requests.
+- main.py calls trainer.run_training.
+- trainer.py creates model from model.py and optimizer from optimizers.py.
+- trainer.py trains/evaluates, saves checkpoints/artifacts, and returns results to main.py.
